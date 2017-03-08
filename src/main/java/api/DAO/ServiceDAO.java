@@ -4,7 +4,9 @@ import api.models.Forum;
 import api.models.Status;
 import api.models.Thread;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,17 +24,20 @@ public class ServiceDAO {
     final private ForumDAO forumDAO;
     final private ThreadDAO threadDAO;
     final private PostDAO postDAO;
+    final private VoteDAO voteDAO;
 
     @Autowired
     public ServiceDAO(JdbcTemplate template, UserDAO userDAO,
                       ForumDAO forumDAO, ThreadDAO threadDAO,
-                      PostDAO postDAO){
+                      PostDAO postDAO, VoteDAO voteDAO){
 
         this.template = template;
         this.userDAO = userDAO;
         this.forumDAO = forumDAO;
         this.threadDAO = threadDAO;
         this.postDAO = postDAO;
+        this.voteDAO = voteDAO;
+        dropTables();
         createTables();
     }
 
@@ -41,9 +46,11 @@ public class ServiceDAO {
         forumDAO.createTable();
         threadDAO.createTable();
         postDAO.createTable();
+        voteDAO.createTable();
     }
 
     public void dropTables(){
+        voteDAO.dropTable();
         postDAO.dropTable();
         threadDAO.dropTable();
         forumDAO.dropTable();

@@ -3,6 +3,7 @@ package api.controllers;
 import api.DAO.ServiceDAO;
 import api.models.Status;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 
 @RestController
-@RequestMapping(path = "/service")
+@RequestMapping(path = "/api/service")
 public class ServiceController {
 
     final private ServiceDAO serviceDAO;
@@ -26,6 +27,7 @@ public class ServiceController {
     @RequestMapping(path = "/clear", method = RequestMethod.POST)
     public ResponseEntity clear(){
         serviceDAO.dropTables();
+        serviceDAO.createTables();
         return ResponseEntity.ok("Очистка прошла успешно");
     }
 

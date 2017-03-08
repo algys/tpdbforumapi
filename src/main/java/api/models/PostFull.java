@@ -28,6 +28,13 @@ public class PostFull {
         this.forum = forum;
     }
 
+    public PostFull(){
+        this.post = null;
+        this.author = null;
+        this.thread = null;
+        this.forum = null;
+    }
+
     public Post getPost() {
         return post;
     }

@@ -55,6 +55,7 @@ public class Thread {
         return votes;
     }
 
+    @JsonProperty
     public String getCreated() {
         return created;
     }

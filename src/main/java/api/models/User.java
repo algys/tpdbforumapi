@@ -56,4 +56,12 @@ public class User {
     public void setEmail(String email) {
         this.email = email;
     }
+
+    public boolean check(){
+        if(nickname == null || fullname == null ||
+                about == null || email == null){
+            return false;
+        }
+        return true;
+    }
 }
