@@ -8,12 +8,9 @@ import api.models.Post;
 import api.models.PostFull;
 import api.models.PostUpdate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.jws.soap.SOAPBinding;
-import java.util.List;
 import java.util.Set;
 
 /**

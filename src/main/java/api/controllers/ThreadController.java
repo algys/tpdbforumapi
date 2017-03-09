@@ -6,18 +6,11 @@ import api.DAO.UserDAO;
 import api.DAO.VoteDAO;
 import api.models.*;
 import api.models.Thread;
-import javafx.geometry.Pos;
-import org.eclipse.jetty.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.NumberUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.IllegalFormatConversionException;
 import java.util.List;
 
 /**
