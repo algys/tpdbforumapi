@@ -48,8 +48,6 @@ public class VoteDAO {
                 .append("author, thread_id) ;")
                 .toString();
 
-        System.out.println(createQuery);
-        System.out.println(indexQuery);
         template.execute(createQuery);
         template.execute(indexQuery);
     }
@@ -58,7 +56,13 @@ public class VoteDAO {
         String query = new StringBuilder()
                 .append("DROP TABLE IF EXISTS vote ;").toString();
 
-        System.out.println(query);
+        template.execute(query);
+    }
+
+    public void truncateTable(){
+        String query = new StringBuilder()
+                .append("TRUNCATE TABLE vote CASCADE ;").toString();
+
         template.execute(query);
     }
 

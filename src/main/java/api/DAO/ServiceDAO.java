@@ -57,6 +57,14 @@ public class ServiceDAO {
         userDAO.dropTable();
     }
 
+    public void truncateTables(){
+        voteDAO.truncateTable();
+        postDAO.truncateTable();
+        threadDAO.truncateTable();
+        forumDAO.truncateTable();
+        userDAO.truncateTable();
+    }
+
     public Status getStatus(){
         return new Status(userDAO.getCount(), forumDAO.getCount(), threadDAO.getCount(), postDAO.getCount());
     }

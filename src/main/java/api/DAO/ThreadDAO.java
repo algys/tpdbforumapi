@@ -45,9 +45,19 @@ public class ThreadDAO {
                 .append("created TIMESTAMP NOT NULL DEFAULT current_timestamp, ")
                 .append("FOREIGN KEY (author) REFERENCES users(nickname), ")
                 .append("FOREIGN KEY (forum) REFERENCES forum(slug)); ")
+                .append("CREATE UNIQUE INDEX ON thread (id); ")
+                .append("CREATE UNIQUE INDEX ON thread (slug); ")
+                .append("CREATE INDEX ON thread (author); ")
+                .append("CREATE INDEX ON thread (forum); ")
                 .toString();
 
-        System.out.println(query);
+        template.execute(query);
+    }
+
+    public void truncateTable(){
+        String query = new StringBuilder()
+                .append("TRUNCATE TABLE thread CASCADE ;").toString();
+
         template.execute(query);
     }
 
@@ -69,7 +79,6 @@ public class ThreadDAO {
 
         Thread newThread = null;
         try {
-            System.out.println(query);
 
             int id = template.queryForObject(query, Integer.class, thread.getTitle(), thread.getAuthor(), thread.getForum(), thread.getMessage());
             template.update(subQuery, thread.getForum());
@@ -104,7 +113,6 @@ public class ThreadDAO {
 
         List<Thread> newThreads = new ArrayList<>();
         try {
-            System.out.println(query);
             for( Thread thread: threads) {
                 Thread newThread = template.queryForObject( query, threadMapper,
                         thread.getTitle(), thread.getAuthor(), thread.getForum(), thread.getMessage());
@@ -138,7 +146,6 @@ public class ThreadDAO {
 
         if(f) {
             try {
-                System.out.println(queryBuilder.toString());
                 template.update(queryBuilder.toString());
             } catch (DataAccessException e) {
                 System.out.println(e.getMessage());
@@ -158,7 +165,6 @@ public class ThreadDAO {
 
         Thread thread = null;
         try {
-            System.out.println(query);
             thread = template.queryForObject(query, threadMapper, id, id);
         } catch (DataAccessException e) {
             System.out.println(e.getMessage());
@@ -173,7 +179,6 @@ public class ThreadDAO {
                 thread.getSlug());
         Thread dupThread;
         try {
-            System.out.println(query);
             dupThread = template.queryForObject(query, threadMapper);
         } catch (DataAccessException e) {
             System.out.println(e.getMessage());
@@ -187,7 +192,6 @@ public class ThreadDAO {
         String query = String.format("SELECT * FROM thread WHERE id = '%d';", id);
         Thread thread;
         try {
-            System.out.println(query);
             thread = template.queryForObject(query, threadMapper);
         } catch (DataAccessException e) {
             System.out.println(e.getMessage());
@@ -201,7 +205,6 @@ public class ThreadDAO {
         String query = String.format("SELECT * FROM thread WHERE slug = '%s';", slug);
         Thread thread;
         try {
-            System.out.println(query);
             thread = template.queryForObject(query, threadMapper);
         } catch (DataAccessException e) {
             System.out.println(e.getMessage());
@@ -237,7 +240,6 @@ public class ThreadDAO {
 
         String query = queryBuilder.toString();
 
-        System.out.println(query);
         ArrayList<Thread> threads = null;
         try {
             List<Map<String, Object>> rows;
@@ -269,7 +271,6 @@ public class ThreadDAO {
         String query = new StringBuilder()
                 .append("DROP TABLE IF EXISTS thread ;").toString();
 
-        System.out.println(query);
         template.execute(query);
     }
 
@@ -277,7 +278,6 @@ public class ThreadDAO {
         String query = new StringBuilder()
                 .append("SELECT COUNT(*) FROM thread ;").toString();
 
-        System.out.println(query);
         return template.queryForObject(query, Integer.class);
     }
 
@@ -290,7 +290,6 @@ public class ThreadDAO {
         final int votes = rs.getInt("votes");
         final String slug = rs.getString("slug");
         final String created = rs.getTimestamp("created").toInstant().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-  //      System.out.println(rs.getTimestamp("created").toInstant().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_INSTANT));
         return new Thread(id, title, author, forum, message, votes, slug, created);
     };
 }

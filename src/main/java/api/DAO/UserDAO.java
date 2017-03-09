@@ -1,24 +1,18 @@
 package api.DAO;
 
 import api.models.User;
-import com.sun.javafx.collections.MappingChange;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Timestamp;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Created by algys on 24.02.17.
@@ -44,9 +38,9 @@ public class UserDAO {
                 .append("fullname varchar(128) NOT NULL, ")
                 .append("about text NOT NULL, ")
                 .append("email CITEXT UNIQUE NOT NULL); ")
+                .append("CREATE UNIQUE INDEX ON users (nickname); ")
                 .toString();
 
-        System.out.println(query);
         template.execute(query);
     }
 
@@ -54,7 +48,13 @@ public class UserDAO {
         String query = new StringBuilder()
                 .append("DROP TABLE IF EXISTS users ;").toString();
 
-        System.out.println(query);
+        template.execute(query);
+    }
+
+    public void truncateTable(){
+        String query = new StringBuilder()
+                .append("TRUNCATE TABLE users CASCADE ;").toString();
+
         template.execute(query);
     }
 
@@ -62,7 +62,6 @@ public class UserDAO {
         String query = new StringBuilder()
                 .append("SELECT COUNT(*) FROM users ;").toString();
 
-        System.out.println(query);
         return template.queryForObject(query, Integer.class);
     }
 
@@ -71,7 +70,6 @@ public class UserDAO {
                 .append("INSERT INTO users(nickname, fullname, about, email) VALUES(?,?,?,?) ;").toString();
 
         try {
-            System.out.println(query);
             template.update(query, user.getNickname(), user.getFullname(), user.getAbout(), user.getEmail());
         } catch (DuplicateKeyException e) {
             System.out.println(e.getMessage());
@@ -106,7 +104,6 @@ public class UserDAO {
 
         if(f) {
             try {
-                System.out.println(queryBuilder.toString());
                 template.execute(queryBuilder.toString());
             } catch (DuplicateKeyException e) {
                 System.out.println(e.getMessage());
@@ -123,7 +120,6 @@ public class UserDAO {
         String query = String.format("SELECT * FROM users WHERE nickname = '%s';", nickname);
         User user = null;
         try {
-            System.out.println(query);
             user = template.queryForObject(query, userMapper);
         } catch (EmptyResultDataAccessException e) {
             System.out.println(e.getMessage());
@@ -136,7 +132,6 @@ public class UserDAO {
         String query = String.format("SELECT * FROM users WHERE email = '%s';", email);
         User user = null;
         try {
-            System.out.println(query);
             user = template.queryForObject(query, userMapper);
         } catch (EmptyResultDataAccessException e) {
             System.out.println(e.getMessage());
@@ -150,7 +145,6 @@ public class UserDAO {
                 user.getNickname(), user.getEmail());
         List<User> users = null;
         try {
-            System.out.println(query);
             List<Map<String, Object>> rows = template.queryForList(query);
             users = new ArrayList<>();
             for(Map<String, Object>row: rows){
@@ -171,7 +165,6 @@ public class UserDAO {
                 .append("SELECT * FROM users WHERE nickname IN (")
                 .append("SELECT author FROM post WHERE forum = ? UNION ")
                 .append("SELECT author FROM thread WHERE forum = ?) ");
-            //    .append("SELECT admin FROM forum WHERE slug = ?) ");
 
         if(since != null) {
             if (desc) {
@@ -189,7 +182,6 @@ public class UserDAO {
 
         String query = queryBuilder.toString();
 
-        System.out.println(query);
         ArrayList<User> users = null;
         try {
             List<Map<String, Object>> rows;
@@ -216,7 +208,6 @@ public class UserDAO {
     public boolean exist(String nickname) {
         String query = String.format("SELECT COUNT(*) FROM users WHERE nickname = '%s';", nickname);
 
-        System.out.println(query);
         return template.queryForObject(query, Integer.class) != 0;
     }
 

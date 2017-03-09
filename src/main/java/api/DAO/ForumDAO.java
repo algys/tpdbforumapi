@@ -42,9 +42,10 @@ public class ForumDAO {
                 .append("posts BIGINT NOT NULL DEFAULT 0, ")
                 .append("threads BIGINT NOT NULL DEFAULT 0, ")
                 .append("FOREIGN KEY (admin) REFERENCES users(nickname)); ")
+                .append("CREATE UNIQUE INDEX ON forum (slug); ")
+                .append("CREATE INDEX ON forum (admin); ")
                 .toString();
 
-        System.out.println(query);
         template.execute(query);
     }
 
@@ -52,7 +53,13 @@ public class ForumDAO {
         String query = new StringBuilder()
                 .append("DROP TABLE IF EXISTS forum ;").toString();
 
-        System.out.println(query);
+        template.execute(query);
+    }
+
+    public void truncateTable(){
+        String query = new StringBuilder()
+                .append("TRUNCATE TABLE forum CASCADE;").toString();
+
         template.execute(query);
     }
 
@@ -60,7 +67,6 @@ public class ForumDAO {
         String query = new StringBuilder()
                 .append("SELECT COUNT(*) FROM forum ;").toString();
 
-        System.out.println(query);
         return template.queryForObject(query, Integer.class);
     }
 
@@ -68,7 +74,6 @@ public class ForumDAO {
         String query = String.format("SELECT * FROM forum WHERE slug = '%s';", slug);
         Forum forum = null;
         try {
-            System.out.println(query);
             forum = template.queryForObject(query, forumMapper);
         } catch (EmptyResultDataAccessException e) {
             System.out.println(e.getMessage());
@@ -83,7 +88,6 @@ public class ForumDAO {
                 .append("VALUES(?,?,?);").toString();
 
         try {
-            System.out.println(query);
             template.update(query, forum.getTitle(), forum.getUser(), forum.getSlug());
         }
         catch (DuplicateKeyException e){
