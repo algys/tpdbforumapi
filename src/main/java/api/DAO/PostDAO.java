@@ -1,28 +1,20 @@
 package api.DAO;
 
 import api.models.*;
-import api.models.Thread;
-import javafx.geometry.Pos;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Created by algys on 24.02.17.
@@ -54,9 +46,12 @@ public class PostDAO {
                 .append("FOREIGN KEY (author) REFERENCES users(nickname), ")
                 .append("FOREIGN KEY (forum) REFERENCES forum(slug), ")
                 .append("FOREIGN KEY (thread_id) REFERENCES thread(id)); ")
+                .append("CREATE UNIQUE INDEX ON post (id); ")
+                .append("CREATE INDEX ON post (author); ")
+                .append("CREATE INDEX ON post (forum); ")
+                .append("CREATE INDEX ON post (thread_id); ")
                 .toString();
 
-        System.out.println(query);
         template.execute(query);
     }
 
@@ -64,7 +59,13 @@ public class PostDAO {
         String query = new StringBuilder()
                 .append("DROP TABLE IF EXISTS post ;").toString();
 
-        System.out.println(query);
+        template.execute(query);
+    }
+
+    public void truncateTable(){
+        String query = new StringBuilder()
+                .append("TRUNCATE TABLE post CASCADE ;").toString();
+
         template.execute(query);
     }
 
@@ -72,7 +73,6 @@ public class PostDAO {
         String query = new StringBuilder()
                 .append("SELECT COUNT(*) FROM post ;").toString();
 
-        System.out.println(query);
         return template.queryForObject(query, Integer.class);
     }
 
@@ -86,7 +86,6 @@ public class PostDAO {
                 .toString();
         Post newPost;
         try {
-            System.out.println(query);
             newPost = template.queryForObject( query, postMapper,
                     post.getParent(), post.getAuthor(), post.getMessage(), post.getThread(), post.getForum());
             template.update(subQuery, post.getForum());
@@ -110,7 +109,6 @@ public class PostDAO {
         List<Post> newPosts = new ArrayList<>();
 
         try {
-            System.out.println(query);
             for( Post post: posts) {
                 Post newPost = template.queryForObject( query, postMapper,
                         post.getParent(), post.getAuthor(), post.getMessage(), post.getThread(), post.getForum());
@@ -124,6 +122,7 @@ public class PostDAO {
         }
         return newPosts;
     }
+
     public Post update(PostUpdate postUpdate, int id){
         StringBuilder queryBuilder = new StringBuilder()
                 .append("UPDATE post SET isEdited = true , ");
@@ -141,7 +140,6 @@ public class PostDAO {
                 if(oldPost.getMessage().equals(postUpdate.getMessage())){
                     return oldPost;
                 }
-                System.out.println(queryBuilder.toString());
                 template.update(queryBuilder.toString());
             } catch (DataAccessException e) {
                 System.out.println(e.getMessage());
@@ -157,7 +155,6 @@ public class PostDAO {
         String query = String.format("SELECT * FROM post WHERE id = '%d';", id);
         Post post = null;
         try {
-            System.out.println(query);
             post = template.queryForObject(query, postMapper);
         } catch (EmptyResultDataAccessException e) {
             System.out.println(e.getMessage());
@@ -179,7 +176,6 @@ public class PostDAO {
         queryBuilder.append("OFFSET ? ;");
         String query = queryBuilder.toString();
 
-        System.out.println(query);
         ArrayList<Post> posts = null;
         try {
             List<Map<String, Object>> rows;
@@ -226,7 +222,6 @@ public class PostDAO {
         queryBuilder.append("OFFSET ? ;");
         String query = queryBuilder.toString();
 
-        System.out.println(query);
         ArrayList<Post> posts = null;
         try {
             List<Map<String, Object>> rows;
@@ -279,7 +274,6 @@ public class PostDAO {
         String query = queryBuilder.toString();
         String parentQuery = parentQueryBuilder.toString();
 
-        System.out.println(query);
         ArrayList<Post> posts = null;
         List<Map<String, Object>> parentRows;
         try {
@@ -335,7 +329,6 @@ public class PostDAO {
         final String forum = rs.getString("forum");
         final int thread = rs.getInt("thread_id");
         final String created = rs.getTimestamp("created").toInstant().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-
         return new Post(id, parent, author, message, isEdited, forum, thread, created);
     };
 }
