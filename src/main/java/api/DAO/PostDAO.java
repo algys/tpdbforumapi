@@ -13,6 +13,7 @@ import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -211,7 +212,7 @@ public class PostDAO {
                 .append("UNION ALL ")
                 .append("SELECT p.id, p.parent, array_append(path, p.id), p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
                 .append("JOIN recursepost rp ON rp.id = p.parent ) ")
-                .append("SELECT id, parent, array_to_string(path, '.') as path, author, message, isEdited, forum, thread_id, created FROM recursepost WHERE thread_id = ? ");
+                .append("SELECT id, parent, path, author, message, isEdited, forum, thread_id, created FROM recursepost WHERE thread_id = ? ");
 
         if(desc) {
             queryBuilder.append("ORDER BY path DESC ");
@@ -260,7 +261,7 @@ public class PostDAO {
                 .append("UNION ALL ")
                 .append("SELECT p.id, p.parent, array_append(path, p.id), p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
                 .append("JOIN recursepost rp ON rp.id = p.parent ) ")
-                .append("SELECT id, parent, array_to_string(path, '.') as path, author, message, isEdited, forum, thread_id, created FROM recursepost WHERE thread_id = ? ");
+                .append("SELECT id, parent, path, author, message, isEdited, forum, thread_id, created FROM recursepost WHERE thread_id = ? ");
 
         if(desc) {
             queryBuilder.append("ORDER BY path DESC ;");
