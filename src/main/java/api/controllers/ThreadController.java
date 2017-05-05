@@ -6,7 +6,7 @@ import api.DAO.UserDAO;
 import api.DAO.VoteDAO;
 import api.models.*;
 import api.models.Thread;
-import javafx.geometry.Pos;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
