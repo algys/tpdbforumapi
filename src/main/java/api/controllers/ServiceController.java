@@ -25,8 +25,7 @@ public class ServiceController {
 
     @RequestMapping(path = "/clear", method = RequestMethod.POST)
     public ResponseEntity clear(){
-        serviceDAO.dropTables();
-        serviceDAO.createTables();
+        serviceDAO.truncateTables();
         return ResponseEntity.ok("Очистка прошла успешно");
     }
 

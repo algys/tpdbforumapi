@@ -6,11 +6,13 @@ import api.DAO.UserDAO;
 import api.DAO.VoteDAO;
 import api.models.*;
 import api.models.Thread;
+import javafx.geometry.Pos;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -46,7 +48,6 @@ public class ThreadController {
         if(thread == null) {
             return ResponseEntity.notFound().build();
         }
-
         for (Post post: body){
             if(post.getParent() != 0) {
                 Post parent = postDAO.getById(post.getParent());

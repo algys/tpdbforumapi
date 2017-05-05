@@ -34,24 +34,6 @@ public class VoteDAO {
         this.postDAO = postDAO;
     }
 
-    public void createTable(){
-        String createQuery = new StringBuilder()
-                .append("CREATE TABLE IF NOT EXISTS vote ( ")
-                .append("author CITEXT NOT NULL, ")
-                .append("thread_id BIGINT NOT NULL, ")
-                .append("voice INT NOT NULL, ")
-                .append("FOREIGN KEY (author) REFERENCES users(nickname), ")
-                .append("FOREIGN KEY (thread_id) REFERENCES thread(id)); ")
-                .toString();
-        String indexQuery = new StringBuilder()
-                .append("CREATE INDEX IF NOT EXISTS vote_id ON vote (")
-                .append("author, thread_id) ;")
-                .toString();
-
-        template.execute(createQuery);
-        template.execute(indexQuery);
-    }
-
     public void dropTable() {
         String query = new StringBuilder()
                 .append("DROP TABLE IF EXISTS vote ;").toString();
@@ -62,6 +44,13 @@ public class VoteDAO {
     public void truncateTable(){
         String query = new StringBuilder()
                 .append("TRUNCATE TABLE vote CASCADE ;").toString();
+
+        template.execute(query);
+    }
+
+    public void clear(){
+        String query = new StringBuilder()
+                .append("DELETE FROM vote ;").toString();
 
         template.execute(query);
     }

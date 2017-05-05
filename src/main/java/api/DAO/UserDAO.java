@@ -30,20 +30,6 @@ public class UserDAO {
         this.template = template;
     }
 
-    public void createTable() {
-        String query = new StringBuilder()
-                .append("CREATE EXTENSION IF NOT EXISTS citext; ")
-                .append("CREATE TABLE IF NOT EXISTS users ( ")
-                .append("nickname CITEXT UNIQUE NOT NULL PRIMARY KEY, ")
-                .append("fullname varchar(128) NOT NULL, ")
-                .append("about text NOT NULL, ")
-                .append("email CITEXT UNIQUE NOT NULL); ")
-                .append("CREATE UNIQUE INDEX ON users (nickname); ")
-                .toString();
-
-        template.execute(query);
-    }
-
     public void dropTable() {
         String query = new StringBuilder()
                 .append("DROP TABLE IF EXISTS users ;").toString();
@@ -54,6 +40,13 @@ public class UserDAO {
     public void truncateTable(){
         String query = new StringBuilder()
                 .append("TRUNCATE TABLE users CASCADE ;").toString();
+
+        template.execute(query);
+    }
+
+    public void clear(){
+        String query = new StringBuilder()
+                .append("DELETE FROM users ;").toString();
 
         template.execute(query);
     }
@@ -163,8 +156,8 @@ public class UserDAO {
 
         StringBuilder queryBuilder = new StringBuilder()
                 .append("SELECT * FROM users WHERE nickname IN (")
-                .append("SELECT author FROM post WHERE forum = ? UNION ")
-                .append("SELECT author FROM thread WHERE forum = ?) ");
+                .append("SELECT author FROM post WHERE LOWER(forum) = LOWER(?) UNION ")
+                .append("SELECT author FROM thread WHERE LOWER(forum) = LOWER(?)) ");
 
         if(since != null) {
             if (desc) {

@@ -1,16 +1,18 @@
 package api.DAO;
 
 import api.models.*;
+import javafx.geometry.Pos;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Timestamp;
-import java.time.ZoneId;
+import java.sql.*;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,29 +35,6 @@ public class PostDAO {
         this.template = template;
     }
 
-    public void createTable(){
-        String query = new StringBuilder()
-                .append("CREATE TABLE IF NOT EXISTS post ( ")
-                .append("id SERIAL PRIMARY KEY, ")
-                .append("parent BIGINT NOT NULL DEFAULT 0, ")
-                .append("author CITEXT NOT NULL, ")
-                .append("message TEXT NOT NULL, ")
-                .append("isEdited BOOLEAN NOT NULL DEFAULT false, ")
-                .append("forum CITEXT NOT NULL, ")
-                .append("thread_id BIGINT NOT NULL, ")
-                .append("created TIMESTAMP NOT NULL DEFAULT current_timestamp, ")
-                .append("FOREIGN KEY (author) REFERENCES users(nickname), ")
-                .append("FOREIGN KEY (forum) REFERENCES forum(slug), ")
-                .append("FOREIGN KEY (thread_id) REFERENCES thread(id)); ")
-                .append("CREATE UNIQUE INDEX ON post (id); ")
-                .append("CREATE INDEX ON post (author); ")
-                .append("CREATE INDEX ON post (forum); ")
-                .append("CREATE INDEX ON post (thread_id); ")
-                .toString();
-
-        template.execute(query);
-    }
-
     public void dropTable(){
         String query = new StringBuilder()
                 .append("DROP TABLE IF EXISTS post ;").toString();
@@ -66,6 +45,13 @@ public class PostDAO {
     public void truncateTable(){
         String query = new StringBuilder()
                 .append("TRUNCATE TABLE post CASCADE ;").toString();
+
+        template.execute(query);
+    }
+
+    public void clear(){
+        String query = new StringBuilder()
+                .append("DELETE FROM post ;").toString();
 
         template.execute(query);
     }
@@ -100,24 +86,69 @@ public class PostDAO {
 
     public List<Post> addMany(List<Post> posts){
         String query = new StringBuilder()
-                .append("INSERT INTO post(parent, author, message, thread_id, forum) ")
-                .append("VALUES(?,?,?,?,?) RETURNING * ;").toString();
-        String subQuery = new StringBuilder()
-                .append("UPDATE forum SET posts = posts + 1 ")
-                .append("WHERE slug = ? ;")
+                .append("INSERT INTO post(id, parent, author, message, thread_id, forum, created) ")
+                .append("VALUES(?,?,?,?,?,?,?); ")
+                .toString();
+
+        String setQuery = new StringBuilder()
+                .append("UPDATE forum SET posts = posts + ? ")
+                .append("WHERE slug = ?; ")
+                .toString();
+
+        String seqQuery = new StringBuilder()
+                .append("SELECT nextval('post_id_seq');")
+                .toString();
+
+        String timeQuery = new StringBuilder()
+                .append("SELECT current_timestamp ;")
                 .toString();
 
         List<Post> newPosts = new ArrayList<>();
-
-        try {
-            for( Post post: posts) {
-                Post newPost = template.queryForObject( query, postMapper,
-                        post.getParent(), post.getAuthor(), post.getMessage(), post.getThread(), post.getForum());
-                template.update(subQuery, post.getForum());
-                newPosts.add(newPost);
+        try(Connection conn = template.getDataSource().getConnection()) {
+            PreparedStatement preparedStatement = conn.prepareStatement(query, Statement.NO_GENERATED_KEYS);
+            Map<String, Integer> updatedForums = new HashMap<>();
+            Integer seq;
+            Timestamp curr_time = null;
+            String time = null;
+            if(posts.get(0).getCreated()==null){
+                curr_time = template.queryForObject(timeQuery, Timestamp.class);
+                time = curr_time.toInstant().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
             }
+            for (Post post: posts){
+                seq = template.queryForObject(seqQuery, Integer.class);
+                post.setId(seq);
+                preparedStatement.setInt(1, post.getId());
+                preparedStatement.setInt(2, post.getParent());
+                preparedStatement.setString(3, post.getAuthor());
+                preparedStatement.setString(4, post.getMessage());
+                preparedStatement.setInt(5, post.getThread());
+                preparedStatement.setString(6, post.getForum());
+                if(post.getCreated()==null) {
+                    post.setCreated(time);
+                    preparedStatement.setTimestamp(7, curr_time);
+                } else
+                preparedStatement.setTimestamp(7, new Timestamp(ZonedDateTime.parse(post.getCreated()).toInstant().toEpochMilli()));
+                if(!updatedForums.containsKey(post.getForum()))
+                    updatedForums.put(post.getForum(), 1);
+                else
+                    updatedForums.put(post.getForum(), updatedForums.get(post.getForum())+1);
+                preparedStatement.addBatch();
+                newPosts.add(post);
+            }
+            preparedStatement.executeBatch();
+            preparedStatement.close();
+
+            preparedStatement = conn.prepareStatement(setQuery, Statement.NO_GENERATED_KEYS);
+            for (Map.Entry<String, Integer> forum: updatedForums.entrySet()){
+                preparedStatement.setInt(1, forum.getValue());
+                preparedStatement.setString(2, forum.getKey());
+                preparedStatement.addBatch();
+            }
+            preparedStatement.executeBatch();
+            preparedStatement.close();
+            conn.close();
         }
-        catch (DataAccessException e){
+        catch (SQLException e){
             System.out.println(e.getMessage());
             return null;
         }

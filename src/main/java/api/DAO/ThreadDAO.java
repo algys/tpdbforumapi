@@ -32,31 +32,16 @@ public class ThreadDAO {
         this.template = template;
     }
 
-    public void createTable(){
+    public void truncateTable(){
         String query = new StringBuilder()
-                .append("CREATE TABLE IF NOT EXISTS thread ( ")
-                .append("id SERIAL PRIMARY KEY, ")
-                .append("title VARCHAR(128) NOT NULL, ")
-                .append("author CITEXT NOT NULL, ")
-                .append("forum CITEXT NOT NULL, ")
-                .append("message TEXT NOT NULL, ")
-                .append("votes BIGINT NOT NULL DEFAULT 0, ")
-                .append("slug CITEXT UNIQUE, ")
-                .append("created TIMESTAMP NOT NULL DEFAULT current_timestamp, ")
-                .append("FOREIGN KEY (author) REFERENCES users(nickname), ")
-                .append("FOREIGN KEY (forum) REFERENCES forum(slug)); ")
-                .append("CREATE UNIQUE INDEX ON thread (id); ")
-                .append("CREATE UNIQUE INDEX ON thread (slug); ")
-                .append("CREATE INDEX ON thread (author); ")
-                .append("CREATE INDEX ON thread (forum); ")
-                .toString();
+                .append("TRUNCATE TABLE thread CASCADE ;").toString();
 
         template.execute(query);
     }
 
-    public void truncateTable(){
+    public void clear(){
         String query = new StringBuilder()
-                .append("TRUNCATE TABLE thread CASCADE ;").toString();
+                .append("DELETE FROM thread ;").toString();
 
         template.execute(query);
     }
@@ -217,7 +202,7 @@ public class ThreadDAO {
     public List<Thread> getByForum(String slug, Integer limit, String since, boolean desc) {
         Timestamp time = null;
         StringBuilder queryBuilder = new StringBuilder()
-                .append("SELECT * FROM thread WHERE forum = ? ");
+                .append("SELECT * FROM thread WHERE LOWER(forum) = LOWER(?) ");
 
         if(since != null) {
             String st = ZonedDateTime.parse(since).format(DateTimeFormatter.ISO_INSTANT);
@@ -250,11 +235,17 @@ public class ThreadDAO {
 
             threads = new ArrayList<>();
             for (Map<String, Object> row : rows) {
+                String sl;
+                if(row.get("slug") == null){
+                    sl = null;
+                } else {
+                    sl = row.get("slug").toString();
+                }
                 threads.add(new Thread(
                                 Integer.parseInt(row.get("id").toString()), row.get("title").toString(),
                                 row.get("author").toString(), row.get("forum").toString(),
                                 row.get("message").toString(), Integer.parseInt(row.get("votes").toString()),
-                                row.get("slug").toString(), Timestamp.valueOf(row.get("created").toString())
+                                sl, Timestamp.valueOf(row.get("created").toString())
                                 .toInstant().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
                         )
                 );

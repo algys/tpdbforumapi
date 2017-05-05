@@ -33,22 +33,6 @@ public class ForumDAO {
         this.template = template;
     }
 
-    public void createTable(){
-        String query = new StringBuilder()
-                .append("CREATE TABLE IF NOT EXISTS forum ( ")
-                .append("title VARCHAR(128) NOT NULL, ")
-                .append("admin CITEXT NOT NULL, ")
-                .append("slug CITEXT UNIQUE NOT NULL PRIMARY KEY, ")
-                .append("posts BIGINT NOT NULL DEFAULT 0, ")
-                .append("threads BIGINT NOT NULL DEFAULT 0, ")
-                .append("FOREIGN KEY (admin) REFERENCES users(nickname)); ")
-                .append("CREATE UNIQUE INDEX ON forum (slug); ")
-                .append("CREATE INDEX ON forum (admin); ")
-                .toString();
-
-        template.execute(query);
-    }
-
     public void dropTable(){
         String query = new StringBuilder()
                 .append("DROP TABLE IF EXISTS forum ;").toString();
@@ -63,6 +47,13 @@ public class ForumDAO {
         template.execute(query);
     }
 
+    public void clear(){
+        String query = new StringBuilder()
+                .append("DELETE FROM forum ;").toString();
+
+        template.execute(query);
+    }
+
     public int getCount(){
         String query = new StringBuilder()
                 .append("SELECT COUNT(*) FROM forum ;").toString();
@@ -71,7 +62,7 @@ public class ForumDAO {
     }
 
     public Forum getBySlug(String slug) {
-        String query = String.format("SELECT * FROM forum WHERE slug = '%s';", slug);
+        String query = String.format("SELECT * FROM forum WHERE LOWER(slug) = LOWER('%s');", slug);
         Forum forum = null;
         try {
             forum = template.queryForObject(query, forumMapper);

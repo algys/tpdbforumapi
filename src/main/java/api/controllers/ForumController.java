@@ -36,7 +36,6 @@ public class ForumController {
     @RequestMapping(path="/create", method = RequestMethod.POST)
     public ResponseEntity createForum(@RequestBody Forum body){
         User user = null;
-
         user = userDAO.getByNickname(body.getUser());
         if(user == null){
             return ResponseEntity.notFound().build();
@@ -75,7 +74,6 @@ public class ForumController {
 
     @RequestMapping(path="/{slug}/details", method = RequestMethod.GET)
     public ResponseEntity details(@PathVariable(name = "slug") String slug){
-
         Forum forum;
 
         forum = forumDAO.getBySlug(slug);

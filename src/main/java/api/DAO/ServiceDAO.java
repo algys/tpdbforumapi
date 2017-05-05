@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ServiceDAO {
 
-    final private JdbcTemplate template;
     final private UserDAO userDAO;
     final private ForumDAO forumDAO;
     final private ThreadDAO threadDAO;
@@ -27,26 +26,17 @@ public class ServiceDAO {
     final private VoteDAO voteDAO;
 
     @Autowired
-    public ServiceDAO(JdbcTemplate template, UserDAO userDAO,
+    public ServiceDAO(UserDAO userDAO,
                       ForumDAO forumDAO, ThreadDAO threadDAO,
                       PostDAO postDAO, VoteDAO voteDAO){
 
-        this.template = template;
         this.userDAO = userDAO;
         this.forumDAO = forumDAO;
         this.threadDAO = threadDAO;
         this.postDAO = postDAO;
         this.voteDAO = voteDAO;
-        dropTables();
-        createTables();
-    }
-
-    public void createTables(){
-        userDAO.createTable();
-        forumDAO.createTable();
-        threadDAO.createTable();
-        postDAO.createTable();
-        voteDAO.createTable();
+  //      dropTables();
+  //      createTables();
     }
 
     public void dropTables(){
@@ -55,6 +45,14 @@ public class ServiceDAO {
         threadDAO.dropTable();
         forumDAO.dropTable();
         userDAO.dropTable();
+    }
+
+    public void clearTables(){
+        voteDAO.clear();
+        postDAO.clear();
+        threadDAO.clear();
+        forumDAO.clear();
+        userDAO.clear();
     }
 
     public void truncateTables(){
