@@ -2,6 +2,8 @@ package api.DAO;
 
 import api.models.*;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -29,6 +31,7 @@ import java.util.Map;
 public class PostDAO {
 
     final private JdbcTemplate template;
+    final private Logger LOG = LogManager.getLogger();
 
     @Autowired
     public PostDAO(JdbcTemplate template){
@@ -58,7 +61,7 @@ public class PostDAO {
 
     public int getCount(){
         String query = new StringBuilder()
-                .append("SELECT COUNT(*) FROM post ;").toString();
+                .append("SELECT COUNT(id) FROM post ;").toString();
 
         return template.queryForObject(query, Integer.class);
     }
@@ -78,7 +81,6 @@ public class PostDAO {
             template.update(subQuery, post.getForum());
         }
         catch (DataAccessException e){
-            System.out.println(e.getMessage());
             return null;
         }
         return newPost;
@@ -86,8 +88,8 @@ public class PostDAO {
 
     public List<Post> addMany(List<Post> posts){
         String query = new StringBuilder()
-                .append("INSERT INTO post(id, parent, author, message, thread_id, forum, created) ")
-                .append("VALUES(?,?,?,?,?,?,?); ")
+                .append("INSERT INTO post(id, parent, author, message, thread_id, forum, created, post_path) ")
+                .append("VALUES(?,?,?,?,?,?,?,array_append((SELECT post_path FROM post WHERE id = ?), ?)); ")
                 .toString();
 
         String setQuery = new StringBuilder()
@@ -123,6 +125,8 @@ public class PostDAO {
                 preparedStatement.setString(4, post.getMessage());
                 preparedStatement.setInt(5, post.getThread());
                 preparedStatement.setString(6, post.getForum());
+                preparedStatement.setInt(8, post.getParent());
+                preparedStatement.setInt(9, post.getId());
                 if(post.getCreated()==null) {
                     post.setCreated(time);
                     preparedStatement.setTimestamp(7, curr_time);
@@ -149,7 +153,6 @@ public class PostDAO {
             conn.close();
         }
         catch (SQLException e){
-            System.out.println(e.getMessage());
             return null;
         }
         return newPosts;
@@ -174,7 +177,6 @@ public class PostDAO {
                 }
                 template.update(queryBuilder.toString());
             } catch (DataAccessException e) {
-                System.out.println(e.getMessage());
                 return null;
             } catch (NullPointerException e){
                 return null;
@@ -189,7 +191,7 @@ public class PostDAO {
         try {
             post = template.queryForObject(query, postMapper);
         } catch (EmptyResultDataAccessException e) {
-            System.out.println(e.getMessage());
+            return null;
         }
 
         return post;
@@ -197,15 +199,17 @@ public class PostDAO {
 
     public PostPage flatSort(int id, Integer limit, Integer offset, Boolean desc){
         StringBuilder queryBuilder = new StringBuilder()
-                .append("SELECT * FROM post WHERE thread_id = ? ");
+                .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
+                .append("JOIN (SELECT id FROM post WHERE thread_id = ? ORDER BY id LIMIT ? OFFSET ?) l ON (l.id = p.id) ")
+                .append("ORDER BY p.id; ");
 
         if(desc) {
-            queryBuilder.append("ORDER BY id DESC ");
-        } else
-            queryBuilder.append("ORDER BY id ");
+            queryBuilder = new StringBuilder()
+                    .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
+                    .append("JOIN (SELECT id FROM post WHERE thread_id = ? ORDER BY id DESC LIMIT ? OFFSET ?) l ON (l.id = p.id) ")
+                    .append("ORDER BY p.id DESC; ");
+        }
 
-        queryBuilder.append("LIMIT ? ");
-        queryBuilder.append("OFFSET ? ;");
         String query = queryBuilder.toString();
 
         ArrayList<Post> posts = null;
@@ -226,7 +230,6 @@ public class PostDAO {
             }
         }
         catch (DataAccessException e){
-            System.out.println(e.getMessage());
             return null;
         }
         Integer newMarker = offset;
@@ -238,20 +241,17 @@ public class PostDAO {
 
     public PostPage treeSort(int id, Integer limit, Integer offset, Boolean desc){
         StringBuilder queryBuilder = new StringBuilder()
-                .append("WITH RECURSIVE recursepost (id, parent, path, author, message, isEdited, forum, thread_id, created) AS ( ")
-                .append("SELECT id, parent, array[id], author, message, isEdited, forum, thread_id, created FROM post WHERE parent = 0 ")
-                .append("UNION ALL ")
-                .append("SELECT p.id, p.parent, array_append(path, p.id), p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
-                .append("JOIN recursepost rp ON rp.id = p.parent ) ")
-                .append("SELECT id, parent, path, author, message, isEdited, forum, thread_id, created FROM recursepost WHERE thread_id = ? ");
+                .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
+                .append("JOIN (SELECT id FROM post WHERE thread_id = ? ORDER BY post_path LIMIT ? OFFSET ?) l ON (l.id = p.id) ")
+                .append("ORDER BY p.post_path; ");
 
         if(desc) {
-            queryBuilder.append("ORDER BY path DESC ");
-        } else
-            queryBuilder.append("ORDER BY path ");
+            queryBuilder = new StringBuilder()
+                    .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
+                    .append("JOIN (SELECT id FROM post WHERE thread_id = ? ORDER BY post_path DESC LIMIT ? OFFSET ?) l ON (l.id = p.id) ")
+                    .append("ORDER BY p.post_path DESC; ");
+        }
 
-        queryBuilder.append("LIMIT ? ");
-        queryBuilder.append("OFFSET ? ;");
         String query = queryBuilder.toString();
 
         ArrayList<Post> posts = null;
@@ -272,7 +272,6 @@ public class PostDAO {
             }
         }
         catch (DataAccessException e){
-            System.out.println(e.getMessage());
             return null;
         }
         Integer newMarker = offset;
@@ -284,25 +283,22 @@ public class PostDAO {
 
     public PostPage parentTreeSort(int id, Integer limit, Integer offset, Boolean desc){
         StringBuilder parentQueryBuilder = new StringBuilder()
-                .append("SELECT id FROM post WHERE parent = 0 AND thread_id = ? ");
+                .append("SELECT id FROM post ")
+                .append("WHERE thread_id = ? AND parent = 0 ");
 
         StringBuilder queryBuilder = new StringBuilder()
-                .append("WITH RECURSIVE recursepost (id, parent, path, author, message, isEdited, forum, thread_id, created) AS ( ")
-                .append("SELECT id, parent, array[id], author, message, isEdited, forum, thread_id, created FROM post WHERE id = ? ")
-                .append("UNION ALL ")
-                .append("SELECT p.id, p.parent, array_append(path, p.id), p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
-                .append("JOIN recursepost rp ON rp.id = p.parent ) ")
-                .append("SELECT id, parent, path, author, message, isEdited, forum, thread_id, created FROM recursepost WHERE thread_id = ? ");
+                .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
+                .append("WHERE p.post_path[1] = ? AND p.thread_id = ? ");
 
         if(desc) {
-            queryBuilder.append("ORDER BY path DESC ;");
+            queryBuilder.append("ORDER BY post_path DESC ;");
             parentQueryBuilder.append("ORDER BY id DESC ");
         } else {
-            queryBuilder.append("ORDER BY path ;");
+            queryBuilder.append("ORDER BY post_path ;");
             parentQueryBuilder.append("ORDER BY id ");
         }
-        parentQueryBuilder.append("LIMIT ? OFFSET ? ;");
 
+        parentQueryBuilder.append("LIMIT ? OFFSET ? ;");
         String query = queryBuilder.toString();
         String parentQuery = parentQueryBuilder.toString();
 
@@ -313,7 +309,9 @@ public class PostDAO {
             posts = new ArrayList<>();
             for (Map<String, Object> parent: parentRows) {
                 List<Map<String, Object>> rows;
-                rows = template.queryForList(query, Integer.parseInt(parent.get("id").toString()), id);
+                Integer p_id = Integer.parseInt(parent.get("id").toString());
+
+                rows = template.queryForList(query, p_id, id);
                 for (Map<String, Object> row : rows) {
                     posts.add(new Post(
                                     Integer.parseInt(row.get("id").toString()), Integer.parseInt(row.get("parent").toString()),
@@ -327,7 +325,6 @@ public class PostDAO {
             }
         }
         catch (DataAccessException e){
-            System.out.println(e.getMessage());
             return null;
         }
         Integer newMarker = offset;

@@ -7,12 +7,14 @@ import api.DAO.UserDAO;
 import api.models.Forum;
 import api.models.Thread;
 import api.models.User;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+
 
 /**
  * Created by algys on 24.02.17.
@@ -25,6 +27,7 @@ public class ForumController {
     final private ForumDAO forumDAO;
     final private UserDAO userDAO;
     final private ThreadDAO threadDAO;
+    final private Logger LOG = LogManager.getLogger();
 
     @Autowired
     public ForumController(ForumDAO forumDAO, UserDAO userDAO, ThreadDAO threadDAO){
@@ -32,9 +35,15 @@ public class ForumController {
         this.userDAO = userDAO;
         this.threadDAO = threadDAO;
     }
+//
+//    @ModelAttribute
+//    public void log(HttpServletRequest request){
+//        LOG.info(request.getMethod() + " " + request.getRequestURI() + " " + request.getParameterMap().toString());
+//    }
 
     @RequestMapping(path="/create", method = RequestMethod.POST)
     public ResponseEntity createForum(@RequestBody Forum body){
+
         User user = null;
         user = userDAO.getByNickname(body.getUser());
         if(user == null){
@@ -89,7 +98,7 @@ public class ForumController {
                                     @RequestParam(name = "limit", required = false) Integer limit,
                                     @RequestParam(name = "since", required = false) String since,
                                     @RequestParam(name = "desc", required = false) Boolean desc){
-        if(forumDAO.getBySlug(slug) == null){
+        if(!forumDAO.hasBySlug(slug)){
             return ResponseEntity.notFound().build();
         }
 
@@ -111,7 +120,7 @@ public class ForumController {
                                       @RequestParam(name = "since", required = false) String since,
                                       @RequestParam(name = "desc", required = false) Boolean desc){
 
-        if(forumDAO.getBySlug(slug) == null){
+        if(!forumDAO.hasBySlug(slug)){
             return ResponseEntity.notFound().build();
         }
 

@@ -7,11 +7,14 @@ import api.DAO.VoteDAO;
 import api.models.*;
 import api.models.Thread;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +30,7 @@ public class ThreadController {
     final private PostDAO postDAO;
     final private UserDAO userDAO;
     final private VoteDAO voteDAO;
+    final private Logger LOG = LogManager.getLogger();
 
     @Autowired
     public ThreadController(ThreadDAO threadDAO, PostDAO postDAO, UserDAO userDAO, VoteDAO voteDAO){
@@ -35,6 +39,11 @@ public class ThreadController {
         this.userDAO = userDAO;
         this.voteDAO = voteDAO;
     }
+
+//    @ModelAttribute
+//    public void log(HttpServletRequest request){
+//        LOG.info(request.getMethod() + " " + request.getRequestURI() + " " + request.getParameterMap().toString());
+//    }
 
     @RequestMapping(path = "/{slug_or_id}/create", method = RequestMethod.POST)
     public ResponseEntity createPost(@PathVariable(name = "slug_or_id") String slug_or_id,
@@ -142,7 +151,6 @@ public class ThreadController {
         if(desc == null) {
             desc = false;
         }
-
 
         return ResponseEntity.ok(postDAO.getByThread(thread.getId(), limit, marker, sort, desc));
     }

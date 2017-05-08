@@ -3,10 +3,14 @@ package api.controllers;
 import api.DAO.Code;
 import api.DAO.UserDAO;
 import api.models.User;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -18,11 +22,17 @@ import java.util.List;
 public class UserController {
 
     final private UserDAO userDAO;
+    final private Logger LOG = LogManager.getLogger();
 
     @Autowired
     public UserController(UserDAO userDAO){
         this.userDAO = userDAO;
     }
+
+//    @ModelAttribute
+//    public void log(HttpServletRequest request){
+//        LOG.info(request.getMethod() + " " + request.getRequestURI() + " " + request.getParameterMap().toString());
+//    }
 
     @RequestMapping(path = "/{nickname}/create", method = RequestMethod.POST)
     public ResponseEntity createUser(@PathVariable(name = "nickname") String nickname,

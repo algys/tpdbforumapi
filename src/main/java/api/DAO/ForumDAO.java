@@ -4,6 +4,8 @@ import api.models.Forum;
 import api.models.Post;
 import api.models.Thread;
 import api.models.User;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
@@ -27,6 +29,7 @@ import java.util.List;
 public class ForumDAO {
 
     final private JdbcTemplate template;
+    final private Logger LOG = LogManager.getLogger();
 
     @Autowired
     public ForumDAO(JdbcTemplate template){
@@ -56,7 +59,7 @@ public class ForumDAO {
 
     public int getCount(){
         String query = new StringBuilder()
-                .append("SELECT COUNT(*) FROM forum ;").toString();
+                .append("SELECT COUNT(id) FROM forum ;").toString();
 
         return template.queryForObject(query, Integer.class);
     }
@@ -67,10 +70,21 @@ public class ForumDAO {
         try {
             forum = template.queryForObject(query, forumMapper);
         } catch (EmptyResultDataAccessException e) {
-            System.out.println(e.getMessage());
+            return null;
         }
 
         return forum;
+    }
+
+    public boolean hasBySlug(String slug) {
+        String query = String.format("SELECT slug FROM forum WHERE LOWER(slug) = LOWER('%s');", slug);
+        try {
+            template.queryForObject(query, String.class);
+        } catch (EmptyResultDataAccessException e) {
+            return false;
+        }
+
+        return true;
     }
 
     public int add(Forum forum){
@@ -82,11 +96,9 @@ public class ForumDAO {
             template.update(query, forum.getTitle(), forum.getUser(), forum.getSlug());
         }
         catch (DuplicateKeyException e){
-            System.out.println(e.getMessage());
             return Code.ERR_DUPLICATE;
         }
         catch (DataAccessException e){
-            System.out.println(e.getMessage());
             return Code.ERR_UNDEFINED;
         }
         return Code.OK;

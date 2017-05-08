@@ -65,10 +65,8 @@ public class UserDAO {
         try {
             template.update(query, user.getNickname(), user.getFullname(), user.getAbout(), user.getEmail());
         } catch (DuplicateKeyException e) {
-            System.out.println(e.getMessage());
             return Code.ERR_DUPLICATE;
         } catch (DataAccessException e) {
-            System.out.println(e.getMessage());
             return Code.ERR_UNDEFINED;
         }
 
@@ -99,10 +97,8 @@ public class UserDAO {
             try {
                 template.execute(queryBuilder.toString());
             } catch (DuplicateKeyException e) {
-                System.out.println(e.getMessage());
                 return Code.ERR_DUPLICATE;
             } catch (DataAccessException e) {
-                System.out.println(e.getMessage());
                 return Code.ERR_UNDEFINED;
             }
         }
@@ -115,7 +111,7 @@ public class UserDAO {
         try {
             user = template.queryForObject(query, userMapper);
         } catch (EmptyResultDataAccessException e) {
-            System.out.println(e.getMessage());
+            return null;
         }
 
         return user;
@@ -127,7 +123,7 @@ public class UserDAO {
         try {
             user = template.queryForObject(query, userMapper);
         } catch (EmptyResultDataAccessException e) {
-            System.out.println(e.getMessage());
+            return null;
         }
 
         return user;
@@ -147,7 +143,7 @@ public class UserDAO {
                 ));
             }
         } catch (EmptyResultDataAccessException e) {
-            System.out.println(e.getMessage());
+            return null;
         }
 
         return users;
@@ -155,9 +151,10 @@ public class UserDAO {
     public List<User> getByForum(String slug, Integer limit, String since, boolean desc) {
 
         StringBuilder queryBuilder = new StringBuilder()
-                .append("SELECT * FROM users WHERE nickname IN (")
-                .append("SELECT author FROM post WHERE LOWER(forum) = LOWER(?) UNION ")
+                .append("SELECT * FROM users WHERE nickname IN ")
+                .append("(SELECT author FROM post WHERE LOWER(forum) = LOWER(?) UNION ALL ")
                 .append("SELECT author FROM thread WHERE LOWER(forum) = LOWER(?)) ");
+
 
         if(since != null) {
             if (desc) {
@@ -192,16 +189,20 @@ public class UserDAO {
             }
         }
         catch (DataAccessException e){
-            System.out.println(e.getMessage());
             return null;
         }
         return users;
     }
 
     public boolean exist(String nickname) {
-        String query = String.format("SELECT COUNT(*) FROM users WHERE nickname = '%s';", nickname);
+        String query = String.format("SELECT nickname FROM users WHERE nickname = '%s';", nickname);
 
-        return template.queryForObject(query, Integer.class) != 0;
+        try {
+            template.queryForObject(query, String.class);
+        } catch (EmptyResultDataAccessException e){
+            return false;
+        }
+        return true;
     }
 
     private final RowMapper<User> userMapper = (rs, num) -> {

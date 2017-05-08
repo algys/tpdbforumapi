@@ -7,10 +7,11 @@ import api.DAO.UserDAO;
 import api.models.Post;
 import api.models.PostFull;
 import api.models.PostUpdate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.Set;
 
 /**
@@ -25,6 +26,7 @@ public class PostController {
     final private ThreadDAO threadDAO;
     final private UserDAO userDAO;
     final private PostDAO postDAO;
+    final private Logger LOG = LogManager.getLogger();
 
     @Autowired
     public PostController(ForumDAO forumDAO, ThreadDAO threadDAO, UserDAO userDAO, PostDAO postDAO){
@@ -33,6 +35,11 @@ public class PostController {
         this.userDAO = userDAO;
         this.postDAO = postDAO;
     }
+
+//    @ModelAttribute
+//    public void log(HttpServletRequest request) {
+//        LOG.info(request.getMethod() + " " + request.getRequestURI() + " " + request.getParameterMap().toString());
+//    }
 
     @RequestMapping(path = "/{id}/details", method = RequestMethod.GET)
     public ResponseEntity detailsPost(@PathVariable(name = "id") int id,

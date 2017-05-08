@@ -80,7 +80,6 @@ public class ThreadDAO {
             newThread = getById(id);
         }
         catch (DataAccessException e){
-            System.out.println(e.getMessage());
             return null;
         }
 
@@ -106,7 +105,6 @@ public class ThreadDAO {
             }
         }
         catch (DataAccessException e){
-            System.out.println(e.getMessage());
             return null;
         }
 
@@ -133,7 +131,6 @@ public class ThreadDAO {
             try {
                 template.update(queryBuilder.toString());
             } catch (DataAccessException e) {
-                System.out.println(e.getMessage());
                 return null;
             }
         }
@@ -152,7 +149,6 @@ public class ThreadDAO {
         try {
             thread = template.queryForObject(query, threadMapper, id, id);
         } catch (DataAccessException e) {
-            System.out.println(e.getMessage());
             return null;
         }
 
@@ -166,7 +162,6 @@ public class ThreadDAO {
         try {
             dupThread = template.queryForObject(query, threadMapper);
         } catch (DataAccessException e) {
-            System.out.println(e.getMessage());
             return null;
         }
 
@@ -179,7 +174,6 @@ public class ThreadDAO {
         try {
             thread = template.queryForObject(query, threadMapper);
         } catch (DataAccessException e) {
-            System.out.println(e.getMessage());
             return null;
         }
 
@@ -192,7 +186,6 @@ public class ThreadDAO {
         try {
             thread = template.queryForObject(query, threadMapper);
         } catch (DataAccessException e) {
-            System.out.println(e.getMessage());
             return null;
         }
 
@@ -252,7 +245,6 @@ public class ThreadDAO {
             }
         }
         catch (DataAccessException e){
-            System.out.println(e.getMessage());
             return null;
         }
         return threads;
@@ -267,7 +259,7 @@ public class ThreadDAO {
 
     public int getCount(){
         String query = new StringBuilder()
-                .append("SELECT COUNT(*) FROM thread ;").toString();
+                .append("SELECT COUNT(id) FROM thread ;").toString();
 
         return template.queryForObject(query, Integer.class);
     }

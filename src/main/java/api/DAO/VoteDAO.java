@@ -76,7 +76,6 @@ public class VoteDAO {
             } else
                 template.update(insertQuery, vote.getNickname(), thread_id, vote.getVoice());
         } catch (DataAccessException e) {
-            System.out.println(e.getMessage());
             return null;
         }
         return threadDAO.resetVotes(thread_id);
