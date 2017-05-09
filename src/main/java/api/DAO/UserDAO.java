@@ -42,6 +42,11 @@ public class UserDAO {
                 .append("TRUNCATE TABLE users CASCADE ;").toString();
 
         template.execute(query);
+
+        query = new StringBuilder()
+                .append("TRUNCATE TABLE users_forum CASCADE ;").toString();
+
+        template.execute(query);
     }
 
     public void clear(){
@@ -151,10 +156,8 @@ public class UserDAO {
     public List<User> getByForum(String slug, Integer limit, String since, boolean desc) {
 
         StringBuilder queryBuilder = new StringBuilder()
-                .append("SELECT * FROM users WHERE nickname IN ")
-                .append("(SELECT author FROM post WHERE LOWER(forum) = LOWER(?) UNION ALL ")
-                .append("SELECT author FROM thread WHERE LOWER(forum) = LOWER(?)) ");
-
+                .append("SELECT users.* FROM users WHERE nickname IN ( ")
+                .append("SELECT author FROM users_forum WHERE LOWER(users_forum.forum) = LOWER(?) ) ");
 
         if(since != null) {
             if (desc) {
@@ -176,9 +179,9 @@ public class UserDAO {
         try {
             List<Map<String, Object>> rows;
             if(since != null)
-                rows = template.queryForList(query, slug, slug, since, limit);
+                rows = template.queryForList(query, slug, since, limit);
             else
-                rows = template.queryForList(query, slug, slug, limit);
+                rows = template.queryForList(query, slug, limit);
             users = new ArrayList<>();
             for (Map<String, Object> row : rows) {
                 users.add(new User(

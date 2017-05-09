@@ -1,2 +1,0 @@
-ALTER TABLE post
-  ADD COLUMN post_path INTEGER[];

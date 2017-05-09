@@ -60,4 +60,4 @@ EXPOSE 5000
 #
 # Запускаем PostgreSQL и сервер
 #
-CMD service postgresql start && java -Xmx300M -Xmx300M -jar $WORK/tpdbforumapi/target/tp-db-forum-api-1.0-SNAPSHOT.jar
+CMD service postgresql start && java -Xmx300m -Xms300m -jar $WORK/tpdbforumapi/target/tp-db-forum-api-1.0-SNAPSHOT.jar

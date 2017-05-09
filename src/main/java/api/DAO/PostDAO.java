@@ -7,7 +7,6 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -86,7 +85,7 @@ public class PostDAO {
         return newPost;
     }
 
-    public List<Post> addMany(List<Post> posts){
+     public List<Post> addMany(List<Post> posts){
         String query = new StringBuilder()
                 .append("INSERT INTO post(id, parent, author, message, thread_id, forum, created, post_path) ")
                 .append("VALUES(?,?,?,?,?,?,?,array_append((SELECT post_path FROM post WHERE id = ?), ?)); ")
@@ -242,14 +241,14 @@ public class PostDAO {
     public PostPage treeSort(int id, Integer limit, Integer offset, Boolean desc){
         StringBuilder queryBuilder = new StringBuilder()
                 .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
-                .append("JOIN (SELECT id FROM post WHERE thread_id = ? ORDER BY post_path LIMIT ? OFFSET ?) l ON (l.id = p.id) ")
-                .append("ORDER BY p.post_path; ");
+                .append("WHERE p.thread_id = ? ")
+                .append("ORDER BY p.post_path LIMIT ? OFFSET ? ;");
 
         if(desc) {
             queryBuilder = new StringBuilder()
                     .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
-                    .append("JOIN (SELECT id FROM post WHERE thread_id = ? ORDER BY post_path DESC LIMIT ? OFFSET ?) l ON (l.id = p.id) ")
-                    .append("ORDER BY p.post_path DESC; ");
+                    .append("WHERE p.thread_id = ? ")
+                    .append("ORDER BY p.post_path DESC LIMIT ? OFFSET ? ; ");
         }
 
         String query = queryBuilder.toString();
@@ -288,7 +287,7 @@ public class PostDAO {
 
         StringBuilder queryBuilder = new StringBuilder()
                 .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
-                .append("WHERE p.post_path[1] = ? AND p.thread_id = ? ");
+                .append("WHERE (p.parent = ? OR p.id = ?) AND p.thread_id = ? ");
 
         if(desc) {
             queryBuilder.append("ORDER BY post_path DESC ;");
@@ -311,7 +310,7 @@ public class PostDAO {
                 List<Map<String, Object>> rows;
                 Integer p_id = Integer.parseInt(parent.get("id").toString());
 
-                rows = template.queryForList(query, p_id, id);
+                rows = template.queryForList(query, p_id, p_id, id);
                 for (Map<String, Object> row : rows) {
                     posts.add(new Post(
                                     Integer.parseInt(row.get("id").toString()), Integer.parseInt(row.get("parent").toString()),

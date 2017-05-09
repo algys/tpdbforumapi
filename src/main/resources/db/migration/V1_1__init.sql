@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS users (
   about text NOT NULL,
   email CITEXT UNIQUE NOT NULL
 );
-CREATE UNIQUE INDEX ON users (email);
 
 CREATE TABLE IF NOT EXISTS forum (
   title VARCHAR(128) NOT NULL,
@@ -16,8 +15,6 @@ CREATE TABLE IF NOT EXISTS forum (
   threads BIGINT NOT NULL DEFAULT 0,
   FOREIGN KEY (admin) REFERENCES users(nickname)
 );
-CREATE INDEX ON forum (title);
-CREATE INDEX ON forum (admin);
 
 CREATE TABLE IF NOT EXISTS thread (
   id SERIAL PRIMARY KEY,
@@ -31,9 +28,6 @@ CREATE TABLE IF NOT EXISTS thread (
   FOREIGN KEY (author) REFERENCES users(nickname),
   FOREIGN KEY (forum) REFERENCES forum(slug)
 );
-CREATE INDEX ON thread (slug);
-CREATE INDEX ON thread (forum);
-CREATE INDEX ON thread (created);
 
 CREATE TABLE IF NOT EXISTS post (
   id SERIAL PRIMARY KEY,
@@ -44,14 +38,11 @@ CREATE TABLE IF NOT EXISTS post (
   forum CITEXT NOT NULL,
   thread_id BIGINT NOT NULL,
   created TIMESTAMP NOT NULL DEFAULT current_timestamp,
+  post_path INTEGER[],
   FOREIGN KEY (author) REFERENCES users(nickname),
   FOREIGN KEY (forum) REFERENCES forum(slug),
   FOREIGN KEY (thread_id) REFERENCES thread(id)
 );
-CREATE INDEX ON post (parent);
-CREATE INDEX ON post (author);
-CREATE INDEX ON post (forum);
-CREATE INDEX ON post (thread_id);
 
 CREATE TABLE IF NOT EXISTS vote (
   author CITEXT NOT NULL,
@@ -61,4 +52,9 @@ CREATE TABLE IF NOT EXISTS vote (
   FOREIGN KEY (thread_id) REFERENCES thread(id)
 );
 
-CREATE INDEX IF NOT EXISTS vote_id ON vote (author, thread_id);
+CREATE TABLE IF NOT EXISTS users_forum (
+  author CITEXT NOT NULL,
+  forum CITEXT NOT NULL,
+  FOREIGN KEY (author) REFERENCES users(nickname),
+  FOREIGN KEY (forum) REFERENCES forum(slug)
+);
