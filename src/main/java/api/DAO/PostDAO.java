@@ -287,7 +287,7 @@ public class PostDAO {
 
         StringBuilder queryBuilder = new StringBuilder()
                 .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
-                .append("WHERE (p.parent = ? OR p.id = ?) AND p.thread_id = ? ");
+                .append("WHERE p.post_path[1] = ? AND p.thread_id = ? ");
 
         if(desc) {
             queryBuilder.append("ORDER BY post_path DESC ;");
@@ -310,7 +310,7 @@ public class PostDAO {
                 List<Map<String, Object>> rows;
                 Integer p_id = Integer.parseInt(parent.get("id").toString());
 
-                rows = template.queryForList(query, p_id, p_id, id);
+                rows = template.queryForList(query, p_id, id);
                 for (Map<String, Object> row : rows) {
                     posts.add(new Post(
                                     Integer.parseInt(row.get("id").toString()), Integer.parseInt(row.get("parent").toString()),

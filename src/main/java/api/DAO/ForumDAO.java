@@ -59,7 +59,7 @@ public class ForumDAO {
 
     public int getCount(){
         String query = new StringBuilder()
-                .append("SELECT COUNT(id) FROM forum ;").toString();
+                .append("SELECT COUNT(slug) FROM forum ;").toString();
 
         return template.queryForObject(query, Integer.class);
     }

@@ -17,9 +17,9 @@ CREATE INDEX ON post (author);
 CREATE INDEX ON post (forum);
 CREATE INDEX ON post (thread_id);
 CREATE INDEX ON post (lower(forum));
-CREATE index on post(thread_id, parent, id);
-CREATE index on post(thread_id, id);
-CREATE INDEX ON post USING GIN (post_path);
+CREATE index on post (thread_id, parent, id);
+CREATE index on post (thread_id, id);
+CREATE INDEX ON post ((post_path[1]));
 
 CREATE INDEX IF NOT EXISTS vote_id ON vote (author, thread_id);
 
