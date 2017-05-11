@@ -58,12 +58,12 @@ public class VoteDAO {
     public Thread add(Vote vote, int thread_id){
         String checkQuery = new StringBuilder()
                 .append("SELECT COUNT(*) FROM vote ")
-                .append("WHERE author = ? AND thread_id = ? ;")
+                .append("WHERE lower(author) = lower(?) AND thread_id = ? ;")
                 .toString();
         String updateQuery = new StringBuilder()
                 .append("UPDATE vote ")
                 .append("SET voice = ? ")
-                .append("WHERE author = ? AND thread_id = ? ;")
+                .append("WHERE lower(author) = lower(?) AND thread_id = ? ;")
                 .toString();
         String insertQuery = new StringBuilder()
                 .append("INSERT INTO vote (author, thread_id, voice) ")
