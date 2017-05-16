@@ -49,7 +49,8 @@ CREATE TABLE IF NOT EXISTS vote (
   thread_id BIGINT NOT NULL,
   voice INT NOT NULL,
   FOREIGN KEY (author) REFERENCES users(nickname),
-  FOREIGN KEY (thread_id) REFERENCES thread(id)
+  FOREIGN KEY (thread_id) REFERENCES thread(id),
+  UNIQUE (author, thread_id)
 );
 
 CREATE TABLE IF NOT EXISTS users_forum (

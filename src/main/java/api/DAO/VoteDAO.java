@@ -67,18 +67,21 @@ public class VoteDAO {
                 .toString();
         String insertQuery = new StringBuilder()
                 .append("INSERT INTO vote (author, thread_id, voice) ")
-                .append("VALUES(?,?,?) ;")
+                .append("VALUES(?,?,?) ")
+                .append("ON CONFLICT(author, thread_id) DO UPDATE ")
+                .append("SET voice = excluded.voice ;")
                 .toString();
 
         try{
-            if(template.queryForObject(checkQuery, Integer.class, vote.getNickname(), thread_id)>0){
-                template.update(updateQuery, vote.getVoice(), vote.getNickname(), thread_id);
-            } else
+//            template.update(insertQuery, vote.getNickname(), thread_id, vote.getVoice());
+//            if(template.queryForObject(checkQuery, Integer.class, vote.getNickname(), thread_id)>0){
+//                template.update(updateQuery, vote.getVoice(), vote.getNickname(), thread_id);
+//            } else
                 template.update(insertQuery, vote.getNickname(), thread_id, vote.getVoice());
         } catch (DataAccessException e) {
             return null;
         }
-        return threadDAO.resetVotes(thread_id);
+        return threadDAO.getById(thread_id);
     }
 
 }

@@ -5,7 +5,7 @@ DECLARE
 BEGIN
   nick = NEW.author;
   forum =  NEW.forum;
-  INSERT INTO users_forum(author,forum) values (nick, forum);
+  INSERT INTO users_forum(author,forum) values (nick, forum) ON CONFLICT DO NOTHING;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
