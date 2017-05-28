@@ -35,24 +35,6 @@ public class ServiceDAO {
         this.threadDAO = threadDAO;
         this.postDAO = postDAO;
         this.voteDAO = voteDAO;
-  //      dropTables();
-  //      createTables();
-    }
-
-    public void dropTables(){
-        voteDAO.dropTable();
-        postDAO.dropTable();
-        threadDAO.dropTable();
-        forumDAO.dropTable();
-        userDAO.dropTable();
-    }
-
-    public void clearTables(){
-        voteDAO.clear();
-        postDAO.clear();
-        threadDAO.clear();
-        forumDAO.clear();
-        userDAO.clear();
     }
 
     public void truncateTables(){

@@ -55,7 +55,5 @@ CREATE TABLE IF NOT EXISTS vote (
 
 CREATE TABLE IF NOT EXISTS users_forum (
   author CITEXT NOT NULL,
-  forum CITEXT NOT NULL,
-  FOREIGN KEY (author) REFERENCES users(nickname),
-  FOREIGN KEY (forum) REFERENCES forum(slug)
+  forum CITEXT NOT NULL
 );

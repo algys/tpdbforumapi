@@ -47,36 +47,18 @@ public class ThreadDAO {
     }
 
     public Thread add(Thread thread){
-        String query = new StringBuilder()
-                .append("INSERT INTO thread(title, author, forum, message) ")
-                .append("VALUES(?,?,?,?) RETURNING id;")
-                .toString();
-        String createdQuery = new StringBuilder()
-                .append("UPDATE thread SET created = ? WHERE id = ? ;")
-                .toString();
-        String slugQuery = new StringBuilder()
-                .append("UPDATE thread SET slug = ? WHERE id = ? ;")
-                .toString();
-        String subQuery = new StringBuilder()
-                .append("UPDATE forum SET threads = threads + 1 ")
-                .append("WHERE slug = ? ;")
-                .toString();
-
         Thread newThread = null;
         try {
-
-            int id = template.queryForObject(query, Integer.class, thread.getTitle(), thread.getAuthor(), thread.getForum(), thread.getMessage());
-            template.update(subQuery, thread.getForum());
-
+            int id = template.queryForObject(Queries.getInsertThread(), Integer.class, thread.getTitle(), thread.getAuthor(), thread.getForum(), thread.getMessage());
+            template.update(Queries.getUpdateThreadsForum(), thread.getForum());
+            template.queryForObject(Queries.getInsertUsersForum(), Object.class,thread.getForum(), thread.getAuthor());
             if(thread.getCreated() != null) {
                 String st = ZonedDateTime.parse(thread.getCreated()).format(DateTimeFormatter.ISO_INSTANT);
-                template.update(createdQuery, new Timestamp(ZonedDateTime.parse(st).toLocalDateTime().toInstant(ZoneOffset.UTC).toEpochMilli()), id);
+                template.update(Queries.getUpdateCreatedThread(), new Timestamp(ZonedDateTime.parse(st).toLocalDateTime().toInstant(ZoneOffset.UTC).toEpochMilli()), id);
             }
-
             if(thread.getSlug() != null) {
-                template.update(slugQuery, thread.getSlug(), id);
+                template.update(Queries.getUpdateSlugThread(), thread.getSlug(), id);
             }
-
             newThread = getById(id);
         }
         catch (DataAccessException e){
@@ -84,31 +66,6 @@ public class ThreadDAO {
         }
 
         return newThread;
-    }
-
-    public List<Thread> addMany(List<Thread> threads){
-        String query = new StringBuilder()
-                .append("INSERT INTO thread(title, author, forum, message) ")
-                .append("VALUES(?,?,?,?) RETURNING *;").toString();
-        String subQuery = new StringBuilder()
-                .append("UPDATE forum SET threads = threads + 1 ")
-                .append("WHERE slug = ? ;")
-                .toString();
-
-        List<Thread> newThreads = new ArrayList<>();
-        try {
-            for( Thread thread: threads) {
-                Thread newThread = template.queryForObject( query, threadMapper,
-                        thread.getTitle(), thread.getAuthor(), thread.getForum(), thread.getMessage());
-                template.update(subQuery, thread.getForum());
-                newThreads.add(newThread);
-            }
-        }
-        catch (DataAccessException e){
-            return null;
-        }
-
-        return newThreads;
     }
 
     public Thread update(ThreadUpdate threadUpdate, int id){
@@ -137,30 +94,10 @@ public class ThreadDAO {
         return getById(id);
     }
 
-    public Thread resetVotes(int id){
-        String query = new StringBuilder()
-                .append("UPDATE thread SET votes = ( ")
-                .append("SELECT SUM(voice) FROM vote WHERE thread_id = ? GROUP BY thread_id ) ")
-                .append("WHERE id = ? ")
-                .append("RETURNING * ;")
-                .toString();
-
-        Thread thread = null;
-        try {
-            thread = template.queryForObject(query, threadMapper, id, id);
-        } catch (DataAccessException e) {
-            return null;
-        }
-
-        return thread;
-    }
-
     public Thread getDuplicate(Thread thread) {
-        String query = String.format("SELECT * FROM thread WHERE slug = '%s' ;",
-                thread.getSlug());
         Thread dupThread;
         try {
-            dupThread = template.queryForObject(query, threadMapper);
+            dupThread = template.queryForObject(Queries.getGetBySlugThread(), threadMapper, thread.getSlug());
         } catch (DataAccessException e) {
             return null;
         }
@@ -169,10 +106,9 @@ public class ThreadDAO {
     }
 
     public Thread getById(int id) {
-        String query = String.format("SELECT * FROM thread WHERE id = '%d';", id);
         Thread thread;
         try {
-            thread = template.queryForObject(query, threadMapper);
+            thread = template.queryForObject(Queries.getGetByIdThread(), threadMapper, id);
         } catch (DataAccessException e) {
             return null;
         }
@@ -181,10 +117,9 @@ public class ThreadDAO {
     }
 
     public Thread getBySlug(String slug) {
-        String query = String.format("SELECT * FROM thread WHERE slug = '%s';", slug);
         Thread thread;
         try {
-            thread = template.queryForObject(query, threadMapper);
+            thread = template.queryForObject(Queries.getGetBySlugThread(), threadMapper, slug);
         } catch (DataAccessException e) {
             return null;
         }
@@ -250,18 +185,8 @@ public class ThreadDAO {
         return threads;
     }
 
-    public void dropTable(){
-        String query = new StringBuilder()
-                .append("DROP TABLE IF EXISTS thread ;").toString();
-
-        template.execute(query);
-    }
-
     public int getCount(){
-        String query = new StringBuilder()
-                .append("SELECT COUNT(id) FROM thread ;").toString();
-
-        return template.queryForObject(query, Integer.class);
+        return template.queryForObject(Queries.getCountThread(), Integer.class);
     }
 
     private final RowMapper<Thread> threadMapper = (rs, num) -> {

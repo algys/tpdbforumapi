@@ -51,33 +51,18 @@ public class VoteDAO {
     public void clear(){
         String query = new StringBuilder()
                 .append("DELETE FROM vote ;").toString();
-
         template.execute(query);
     }
 
     public Thread add(Vote vote, int thread_id){
-        String checkQuery = new StringBuilder()
-                .append("SELECT COUNT(*) FROM vote ")
-                .append("WHERE author = ? AND thread_id = ? ;")
-                .toString();
-        String updateQuery = new StringBuilder()
-                .append("UPDATE vote ")
-                .append("SET voice = ? ")
-                .append("WHERE author = ? AND thread_id = ? ;")
-                .toString();
         String insertQuery = new StringBuilder()
                 .append("INSERT INTO vote (author, thread_id, voice) ")
                 .append("VALUES(?,?,?) ")
                 .append("ON CONFLICT(author, thread_id) DO UPDATE ")
                 .append("SET voice = excluded.voice ;")
                 .toString();
-
         try{
-//            template.update(insertQuery, vote.getNickname(), thread_id, vote.getVoice());
-//            if(template.queryForObject(checkQuery, Integer.class, vote.getNickname(), thread_id)>0){
-//                template.update(updateQuery, vote.getVoice(), vote.getNickname(), thread_id);
-//            } else
-                template.update(insertQuery, vote.getNickname(), thread_id, vote.getVoice());
+            template.update(insertQuery, vote.getNickname(), thread_id, vote.getVoice());
         } catch (DataAccessException e) {
             return null;
         }

@@ -37,86 +37,29 @@ public class PostDAO {
         this.template = template;
     }
 
-    public void dropTable(){
-        String query = new StringBuilder()
-                .append("DROP TABLE IF EXISTS post ;").toString();
-
-        template.execute(query);
-    }
-
     public void truncateTable(){
-        String query = new StringBuilder()
-                .append("TRUNCATE TABLE post CASCADE ;").toString();
-
-        template.execute(query);
-    }
-
-    public void clear(){
-        String query = new StringBuilder()
-                .append("DELETE FROM post ;").toString();
-
-        template.execute(query);
+        template.execute(Queries.getTruncatePost());
     }
 
     public int getCount(){
-        String query = new StringBuilder()
-                .append("SELECT COUNT(id) FROM post ;").toString();
-
-        return template.queryForObject(query, Integer.class);
+        return template.queryForObject(Queries.getCountPost(), Integer.class);
     }
 
-    public Post add(Post post){
-        String query = new StringBuilder()
-                .append("INSERT INTO post(parent, author, message, thread_id, forum) ")
-                .append("VALUES(?,?,?,?,?) RETURNING * ;").toString();
-        String subQuery = new StringBuilder()
-                .append("UPDATE forum SET posts = posts + 1 ")
-                .append("WHERE slug = ? ;")
-                .toString();
-        Post newPost;
-        try {
-            newPost = template.queryForObject( query, postMapper,
-                    post.getParent(), post.getAuthor(), post.getMessage(), post.getThread(), post.getForum());
-            template.update(subQuery, post.getForum());
-        }
-        catch (DataAccessException e){
-            return null;
-        }
-        return newPost;
-    }
-
-     public List<Post> addMany(List<Post> posts){
-        String query = new StringBuilder()
-                .append("INSERT INTO post(id, parent, author, message, thread_id, forum, created, post_path) ")
-                .append("VALUES(?,?,?,?,?,?,?,array_append((SELECT post_path FROM post WHERE id = ?), ?)); ")
-                .toString();
-
-        String setQuery = new StringBuilder()
-                .append("UPDATE forum SET posts = posts + ? ")
-                .append("WHERE slug = ?; ")
-                .toString();
-
-        String seqQuery = new StringBuilder()
-                .append("SELECT nextval('post_id_seq');")
-                .toString();
-
-        String timeQuery = new StringBuilder()
-                .append("SELECT current_timestamp ;")
-                .toString();
-
+    public List<Post> addMany(List<Post> posts){
         List<Post> newPosts = new ArrayList<>();
         try(Connection conn = template.getDataSource().getConnection()) {
-            PreparedStatement preparedStatement = conn.prepareStatement(query, Statement.NO_GENERATED_KEYS);
+            PreparedStatement preparedStatement = conn.prepareStatement(Queries.getInsertPost(), Statement.NO_GENERATED_KEYS);
             Map<String, Integer> updatedForums = new HashMap<>();
             Integer seq;
             Timestamp curr_time = null;
             String time = null;
             if(posts.get(0).getCreated()==null){
-                curr_time = template.queryForObject(timeQuery, Timestamp.class);
+                curr_time = template.queryForObject(Queries.getGetCurrentTimestamp(), Timestamp.class);
                 time = curr_time.toInstant().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
             }
+
             for (Post post: posts){
-                seq = template.queryForObject(seqQuery, Integer.class);
+                seq = template.queryForObject(Queries.getGetPostNextId(), Integer.class);
                 post.setId(seq);
                 preparedStatement.setInt(1, post.getId());
                 preparedStatement.setInt(2, post.getParent());
@@ -130,18 +73,22 @@ public class PostDAO {
                     post.setCreated(time);
                     preparedStatement.setTimestamp(7, curr_time);
                 } else
-                preparedStatement.setTimestamp(7, new Timestamp(ZonedDateTime.parse(post.getCreated()).toInstant().toEpochMilli()));
+                    preparedStatement.setTimestamp(7, new Timestamp(ZonedDateTime.parse(post.getCreated()).toInstant().toEpochMilli()));
+
                 if(!updatedForums.containsKey(post.getForum()))
                     updatedForums.put(post.getForum(), 1);
                 else
                     updatedForums.put(post.getForum(), updatedForums.get(post.getForum())+1);
+
+                template.queryForObject(Queries.getInsertUsersForum(), Object.class, post.getForum(),post.getAuthor());
+
                 preparedStatement.addBatch();
                 newPosts.add(post);
             }
             preparedStatement.executeBatch();
             preparedStatement.close();
 
-            preparedStatement = conn.prepareStatement(setQuery, Statement.NO_GENERATED_KEYS);
+            preparedStatement = conn.prepareStatement(Queries.getUpdatePostsForum(), Statement.NO_GENERATED_KEYS);
             for (Map.Entry<String, Integer> forum: updatedForums.entrySet()){
                 preparedStatement.setInt(1, forum.getValue());
                 preparedStatement.setString(2, forum.getKey());
@@ -185,10 +132,9 @@ public class PostDAO {
     }
 
     public Post getById(int id){
-        String query = String.format("SELECT * FROM post WHERE id = '%d';", id);
         Post post = null;
         try {
-            post = template.queryForObject(query, postMapper);
+            post = template.queryForObject(Queries.getGetByIdPost(), postMapper, id);
         } catch (EmptyResultDataAccessException e) {
             return null;
         }
@@ -199,14 +145,14 @@ public class PostDAO {
     public PostPage flatSort(int id, Integer limit, Integer offset, Boolean desc){
         StringBuilder queryBuilder = new StringBuilder()
                 .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
-                .append("JOIN (SELECT id FROM post WHERE thread_id = ? ORDER BY id LIMIT ? OFFSET ?) l ON (l.id = p.id) ")
-                .append("ORDER BY p.id; ");
+                .append("WHERE thread_id = ? ")
+                .append("ORDER BY p.id LIMIT ? OFFSET ?; ");
 
         if(desc) {
             queryBuilder = new StringBuilder()
                     .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
-                    .append("JOIN (SELECT id FROM post WHERE thread_id = ? ORDER BY id DESC LIMIT ? OFFSET ?) l ON (l.id = p.id) ")
-                    .append("ORDER BY p.id DESC; ");
+                    .append("WHERE thread_id = ? ")
+                    .append("ORDER BY p.id DESC LIMIT ? OFFSET ?; ");
         }
 
         String query = queryBuilder.toString();
@@ -242,13 +188,13 @@ public class PostDAO {
         StringBuilder queryBuilder = new StringBuilder()
                 .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
                 .append("WHERE p.thread_id = ? ")
-                .append("ORDER BY p.post_path LIMIT ? OFFSET ? ;");
+                .append("ORDER BY p.post_path LIMIT ? OFFSET ?;");
 
         if(desc) {
             queryBuilder = new StringBuilder()
                     .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
                     .append("WHERE p.thread_id = ? ")
-                    .append("ORDER BY p.post_path DESC LIMIT ? OFFSET ? ; ");
+                    .append("ORDER BY p.post_path DESC LIMIT ? OFFSET ?; ");
         }
 
         String query = queryBuilder.toString();
@@ -282,12 +228,12 @@ public class PostDAO {
 
     public PostPage parentTreeSort(int id, Integer limit, Integer offset, Boolean desc){
         StringBuilder parentQueryBuilder = new StringBuilder()
-                .append("SELECT id FROM post ")
+                .append("SELECT id, created FROM post ")
                 .append("WHERE thread_id = ? AND parent = 0 ");
 
         StringBuilder queryBuilder = new StringBuilder()
                 .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
-                .append("WHERE p.post_path[1] = ? AND p.thread_id = ? ");
+                .append("WHERE p.post_path[1] = ? ");
 
         if(desc) {
             queryBuilder.append("ORDER BY post_path DESC ;");
@@ -304,13 +250,13 @@ public class PostDAO {
         ArrayList<Post> posts = null;
         List<Map<String, Object>> parentRows;
         try {
-            parentRows = template.queryForList(parentQuery, id, limit, offset);
+            parentRows = template.queryForList(parentQuery, id ,limit, offset);
             posts = new ArrayList<>();
             for (Map<String, Object> parent: parentRows) {
                 List<Map<String, Object>> rows;
                 Integer p_id = Integer.parseInt(parent.get("id").toString());
 
-                rows = template.queryForList(query, p_id, id);
+                rows = template.queryForList(query, p_id);
                 for (Map<String, Object> row : rows) {
                     posts.add(new Post(
                                     Integer.parseInt(row.get("id").toString()), Integer.parseInt(row.get("parent").toString()),

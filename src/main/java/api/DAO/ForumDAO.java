@@ -36,39 +36,18 @@ public class ForumDAO {
         this.template = template;
     }
 
-    public void dropTable(){
-        String query = new StringBuilder()
-                .append("DROP TABLE IF EXISTS forum ;").toString();
-
-        template.execute(query);
-    }
-
     public void truncateTable(){
-        String query = new StringBuilder()
-                .append("TRUNCATE TABLE forum CASCADE;").toString();
-
-        template.execute(query);
-    }
-
-    public void clear(){
-        String query = new StringBuilder()
-                .append("DELETE FROM forum ;").toString();
-
-        template.execute(query);
+        template.execute(Queries.getTruncateForum());
     }
 
     public int getCount(){
-        String query = new StringBuilder()
-                .append("SELECT COUNT(slug) FROM forum ;").toString();
-
-        return template.queryForObject(query, Integer.class);
+        return template.queryForObject(Queries.getCountForum(), Integer.class);
     }
 
     public Forum getBySlug(String slug) {
-        String query = String.format("SELECT * FROM forum WHERE LOWER(slug) = LOWER('%s');", slug);
         Forum forum = null;
         try {
-            forum = template.queryForObject(query, forumMapper);
+            forum = template.queryForObject(Queries.getGetBySlugForum(), forumMapper, slug);
         } catch (EmptyResultDataAccessException e) {
             return null;
         }
@@ -77,9 +56,8 @@ public class ForumDAO {
     }
 
     public boolean hasBySlug(String slug) {
-        String query = String.format("SELECT slug FROM forum WHERE LOWER(slug) = LOWER('%s');", slug);
         try {
-            template.queryForObject(query, String.class);
+            template.queryForObject(Queries.getGetSlugForumBySlug(), String.class, slug);
         } catch (EmptyResultDataAccessException e) {
             return false;
         }
@@ -88,12 +66,8 @@ public class ForumDAO {
     }
 
     public int add(Forum forum){
-        String query = new StringBuilder()
-                .append("INSERT INTO forum(title, admin, slug) ")
-                .append("VALUES(?,?,?);").toString();
-
         try {
-            template.update(query, forum.getTitle(), forum.getUser(), forum.getSlug());
+            template.update(Queries.getInsertForum(), forum.getTitle(), forum.getUser(), forum.getSlug());
         }
         catch (DuplicateKeyException e){
             return Code.ERR_DUPLICATE;

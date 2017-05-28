@@ -30,45 +30,18 @@ public class UserDAO {
         this.template = template;
     }
 
-    public void dropTable() {
-        String query = new StringBuilder()
-                .append("DROP TABLE IF EXISTS users ;").toString();
-
-        template.execute(query);
-    }
-
     public void truncateTable(){
-        String query = new StringBuilder()
-                .append("TRUNCATE TABLE users CASCADE ;").toString();
-
-        template.execute(query);
-
-        query = new StringBuilder()
-                .append("TRUNCATE TABLE users_forum CASCADE ;").toString();
-
-        template.execute(query);
-    }
-
-    public void clear(){
-        String query = new StringBuilder()
-                .append("DELETE FROM users ;").toString();
-
-        template.execute(query);
+        template.execute(Queries.getTruncateUsers());
+        template.execute(Queries.getTruncateUsersForum());
     }
 
     public int getCount() {
-        String query = new StringBuilder()
-                .append("SELECT COUNT(*) FROM users ;").toString();
-
-        return template.queryForObject(query, Integer.class);
+        return template.queryForObject(Queries.getCountUsers(), Integer.class);
     }
 
     public int add(User user) {
-        String query = new StringBuilder()
-                .append("INSERT INTO users(nickname, fullname, about, email) VALUES(?,?,?,?) ;").toString();
-
         try {
-            template.update(query, user.getNickname(), user.getFullname(), user.getAbout(), user.getEmail());
+            template.update(Queries.getInsertUsers(), user.getNickname(), user.getFullname(), user.getAbout(), user.getEmail());
         } catch (DuplicateKeyException e) {
             return Code.ERR_DUPLICATE;
         } catch (DataAccessException e) {
@@ -111,22 +84,9 @@ public class UserDAO {
     }
 
     public User getByNickname(String nickname) {
-        String query = String.format("SELECT * FROM users WHERE nickname = '%s';", nickname);
         User user = null;
         try {
-            user = template.queryForObject(query, userMapper);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
-        }
-
-        return user;
-    }
-
-    public User getByEmail(String email) {
-        String query = String.format("SELECT * FROM users WHERE email = '%s';", email);
-        User user = null;
-        try {
-            user = template.queryForObject(query, userMapper);
+            user = template.queryForObject(Queries.getGetByNicknameUsers(), userMapper, nickname);
         } catch (EmptyResultDataAccessException e) {
             return null;
         }
@@ -154,34 +114,22 @@ public class UserDAO {
         return users;
     }
     public List<User> getByForum(String slug, Integer limit, String since, boolean desc) {
-
-        StringBuilder queryBuilder = new StringBuilder()
-                .append("SELECT users.* FROM users WHERE nickname IN ( ")
-                .append("SELECT author FROM users_forum WHERE LOWER(users_forum.forum) = LOWER(?) ) ");
-
-        if(since != null) {
-            if (desc) {
-                queryBuilder.append("AND LOWER(nickname COLLATE \"ucs_basic\") < LOWER(? COLLATE \"ucs_basic\") ");
-            } else
-                queryBuilder.append("AND LOWER(nickname COLLATE \"ucs_basic\") > LOWER(? COLLATE \"ucs_basic\") ");
-        }
-
-        if(desc) {
-            queryBuilder.append("ORDER BY LOWER(nickname COLLATE \"ucs_basic\") DESC ");
-        } else
-            queryBuilder.append("ORDER BY LOWER(nickname COLLATE \"ucs_basic\") ");
-
-        queryBuilder.append("LIMIT ? ;");
-
-        String query = queryBuilder.toString();
-
         ArrayList<User> users = null;
         try {
             List<Map<String, Object>> rows;
-            if(since != null)
-                rows = template.queryForList(query, slug, since, limit);
-            else
-                rows = template.queryForList(query, slug, limit);
+            if(since != null) {
+                if (desc) {
+                    rows = template.queryForList(Queries.getSelectUsersByForumSinceDesc(),slug,since,limit);
+                } else {
+                    rows = template.queryForList(Queries.getSelectUsersByForumSince(),slug,since,limit);
+                }
+            } else {
+                if(desc) {
+                    rows = template.queryForList(Queries.getSelectUsersByForumDesc(),slug,limit);
+                } else {
+                    rows = template.queryForList(Queries.getSelectUsersByForum(),slug,limit);
+                }
+            }
             users = new ArrayList<>();
             for (Map<String, Object> row : rows) {
                 users.add(new User(

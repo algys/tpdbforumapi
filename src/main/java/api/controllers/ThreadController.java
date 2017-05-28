@@ -142,16 +142,15 @@ public class ThreadController {
         if(thread == null){
             return ResponseEntity.notFound().build();
         }
+        if(desc == null) {
+            desc = false;
+        }
         if(marker == null) {
             marker = "0";
         }
         if(sort == null) {
             sort = "flat";
         }
-        if(desc == null) {
-            desc = false;
-        }
-
         return ResponseEntity.ok(postDAO.getByThread(thread.getId(), limit, marker, sort, desc));
     }
 
