@@ -143,24 +143,13 @@ public class PostDAO {
     }
 
     public PostPage flatSort(int id, Integer limit, Integer offset, Boolean desc){
-        StringBuilder queryBuilder = new StringBuilder()
-                .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
-                .append("WHERE thread_id = ? ")
-                .append("ORDER BY p.id LIMIT ? OFFSET ?; ");
-
-        if(desc) {
-            queryBuilder = new StringBuilder()
-                    .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
-                    .append("WHERE thread_id = ? ")
-                    .append("ORDER BY p.id DESC LIMIT ? OFFSET ?; ");
-        }
-
-        String query = queryBuilder.toString();
-
         ArrayList<Post> posts = null;
         try {
             List<Map<String, Object>> rows;
-            rows = template.queryForList(query, id, limit, offset);
+            if(desc)
+                rows = template.queryForList(Queries.getPostSortFlatDesc(), id, limit, offset);
+            else
+                rows = template.queryForList(Queries.getPostSortFlat(), id, limit, offset);
 
             posts = new ArrayList<>();
             for (Map<String, Object> row : rows) {
@@ -185,24 +174,13 @@ public class PostDAO {
     }
 
     public PostPage treeSort(int id, Integer limit, Integer offset, Boolean desc){
-        StringBuilder queryBuilder = new StringBuilder()
-                .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
-                .append("WHERE p.thread_id = ? ")
-                .append("ORDER BY p.post_path LIMIT ? OFFSET ?;");
-
-        if(desc) {
-            queryBuilder = new StringBuilder()
-                    .append("SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p ")
-                    .append("WHERE p.thread_id = ? ")
-                    .append("ORDER BY p.post_path DESC LIMIT ? OFFSET ?; ");
-        }
-
-        String query = queryBuilder.toString();
-
         ArrayList<Post> posts = null;
         try {
             List<Map<String, Object>> rows;
-            rows = template.queryForList(query, id, limit, offset);
+            if(desc)
+                rows = template.queryForList(Queries.getPostSortTreeDesc(), id, limit, offset);
+            else
+                rows = template.queryForList(Queries.getPostSortTree(), id, limit, offset);
 
             posts = new ArrayList<>();
             for (Map<String, Object> row : rows) {

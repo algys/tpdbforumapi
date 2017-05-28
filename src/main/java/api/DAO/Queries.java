@@ -66,6 +66,27 @@ public class Queries {
             "ORDER BY LOWER(nickname COLLATE \"ucs_basic\") DESC " +
             "LIMIT ?;";
 
+    private static final String postSortFlat =
+            "SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p " +
+            "WHERE thread_id = ? " +
+            "ORDER BY p.id LIMIT ? OFFSET ?;";
+
+    private static final String postSortFlatDesc =
+            "SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p " +
+            "WHERE thread_id = ? " +
+            "ORDER BY p.id DESC LIMIT ? OFFSET ?;";
+
+    private static final String postSortTree =
+            "SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p " +
+            "WHERE p.thread_id = ? " +
+            "ORDER BY p.post_path LIMIT ? OFFSET ?;";
+
+    private static final String postSortTreeDesc =
+            "SELECT p.id, p.parent, p.author, p.message, p.isEdited, p.forum, p.thread_id, p.created FROM post AS p " +
+                    "WHERE p.thread_id = ? " +
+                    "ORDER BY p.post_path DESC LIMIT ? OFFSET ?;";
+
+
     public static String getTruncateForum() {
         return truncateForum;
     }
@@ -192,5 +213,21 @@ public class Queries {
 
     public static String getSelectUsersByForumSinceDesc() {
         return selectUsersByForumSinceDesc;
+    }
+
+    public static String getPostSortFlat() {
+        return postSortFlat;
+    }
+
+    public static String getPostSortFlatDesc() {
+        return postSortFlatDesc;
+    }
+
+    public static String getPostSortTree() {
+        return postSortTree;
+    }
+
+    public static String getPostSortTreeDesc() {
+        return postSortTreeDesc;
     }
 }
